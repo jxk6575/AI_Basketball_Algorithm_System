@@ -1,8 +1,13 @@
 # Basketball Game Algorithm
 
-An AI-powered basketball referee system that automatically detects rule violations using computer vision and deep learning techniques. The system analyzes basketball game footage to identify various violations including blocking fouls, double dribble, shot clock violations, and more.
-<img width="472" alt="7f50e102e6966faa7f5366020598a55" src="https://github.com/user-attachments/assets/9605b022-2cdd-42bc-b873-47801b670801">
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.8.0-red.svg)](https://opencv.org/)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-8.0.196-green.svg)](https://github.com/ultralytics/yolov8)
 
+An AI-powered basketball referee system that automatically detects rule violations using computer vision and deep learning techniques. The system analyzes basketball game footage to identify various violations including blocking fouls, double dribble, shot clock violations, and more.
+
+<img width="472" alt="7f50e102e6966faa7f5366020598a55" src="https://github.com/user-attachments/assets/9605b022-2cdd-42bc-b873-47801b670801">
 
 ## Features
 
@@ -20,6 +25,19 @@ An AI-powered basketball referee system that automatically detects rule violatio
 - Pose estimation for detailed movement analysis
 - Video processing and annotation
 - Cloud deployment support
+
+## System Requirements
+
+### Hardware
+- CPU: Intel i5/AMD Ryzen 5 or better
+- RAM: 16GB minimum
+- GPU: NVIDIA GPU with CUDA support (recommended)
+- Storage: 5GB free space
+
+### Software
+- Python 3.12
+- CUDA Toolkit (for GPU acceleration)
+- FFmpeg (for video processing)
 
 ## Installation
 
@@ -111,29 +129,6 @@ The project includes configuration for deployment to cloud servers (see `.idea/d
 - Ultralytics 8.0.196
 - YOLOv5 7.0.13
 
-### Installation
-1. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate  # Windows
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Download model weights:
-```bash
-mkdir -p models/weights
-# Download the following weights to models/weights/:
-# - yolov8s-pose.pt
-# - basketballModel.pt
-# - best_1_27.pt
-```
-
 ### Optional Dependencies
 - tensorboard: For training visualization
 - seaborn: For enhanced plotting
@@ -151,12 +146,36 @@ python test_model_loading.py
 3. Implement `check_violation` method
 4. Register in `models/__init__.py`
 
+## Troubleshooting
+
+### Common Issues
+1. **Model Loading Errors**
+   - Verify all required weight files are in `models/weights/`
+   - Check CUDA compatibility for GPU usage
+   - Ensure correct Python and package versions
+
+2. **Performance Issues**
+   - Reduce input video resolution
+   - Adjust confidence thresholds
+   - Enable GPU acceleration if available
+
 ## Contributing
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## Citation
+```bibtex
+@software{jiang2024basketball,
+  author = {Xiankun Jiang},
+  title = {AI Basketball Algorithm System},
+  year = {2024},
+  publisher = {GitHub},
+  url = {https://github.com/jxk6575/AI_Basketball_Algorithm_System}
+}
+```
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
