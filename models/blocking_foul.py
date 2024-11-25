@@ -1,12 +1,20 @@
 from .detector_base import BaseDetector
 import cv2
 import numpy as np
+from pathlib import Path
 
 class BlockingFoulDetector(BaseDetector):
-    def __init__(self):
-        super().__init__({
-            'pose': 'model/weights/yolov8s-pose.pt'
-        })
+    def __init__(self, models=None):
+        super().__init__(models)
+        
+        if not models:
+            weights_dir = Path(__file__).parent / "weights"
+            weights_dir.mkdir(exist_ok=True)
+            
+            model_paths = {
+                'pose': str(weights_dir / 'yolov8s-pose.pt')
+            }
+            self._load_models(model_paths)
         
         # Body indices for foul detection
         self.body_index = {
@@ -20,31 +28,8 @@ class BlockingFoulDetector(BaseDetector):
             "right_wrist": 10
         }
         
-    def check_foul(self, defender, shooter):
-        """Check if defender is committing a blocking foul"""
-        def_parts = ["left_wrist", "right_wrist"]
-        shoot_parts = [
-            "left_shoulder",
-            "right_shoulder",
-            "left_elbow",
-            "right_elbow",
-            "left_wrist",
-            "right_wrist",
-        ]
-        
-        for dpart in def_parts:
-            for spart in shoot_parts:
-                if self.calculate_distance(defender[dpart], shooter[spart]) < 40:
-                    return True
-        return False
-        
-    def calculate_distance(self, a, b):
-        """Calculate Euclidean distance between two points"""
-        if a is None or b is None:
-            return float('inf')
-        return np.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
-        
     def process_frame(self, frame):
+        """Process a single frame and return detections"""
         results = self.models['pose'](frame, verbose=False, conf=0.5)
         annotated_frame = results[0].plot()
         
@@ -63,6 +48,40 @@ class BlockingFoulDetector(BaseDetector):
                         parts[part] = None
                 persons.append(parts)
                 
-            return self.check_foul(persons[1], persons[0]), annotated_frame
+            return persons, annotated_frame
             
-        return False, annotated_frame
+        return None, annotated_frame
+        
+    def check_violation(self, frame, detections):
+        """Implementation of abstract method to check for blocking fouls"""
+        try:
+            persons, _ = self.process_frame(frame)
+            if persons and len(persons) >= 2:
+                return self.check_foul(persons[1], persons[0])  # defender, shooter
+        except Exception as e:
+            print(f"Error checking blocking foul: {str(e)}")
+        return False
+        
+    def check_foul(self, defender, shooter):
+        """Check if defender is committing a blocking foul"""
+        def_parts = ["left_wrist", "right_wrist"]
+        shoot_parts = [
+            "left_shoulder",
+            "right_shoulder",
+            "left_hip",
+            "right_hip",
+            "left_wrist",
+            "right_wrist",
+        ]
+        
+        for dpart in def_parts:
+            for spart in shoot_parts:
+                if self.calculate_distance(defender[dpart], shooter[spart]) < 40:
+                    return True
+        return False
+        
+    def calculate_distance(self, a, b):
+        """Calculate Euclidean distance between two points"""
+        if a is None or b is None:
+            return float('inf')
+        return np.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
