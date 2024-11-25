@@ -75,6 +75,16 @@ MODEL_SETTINGS = {
     'conf_threshold': {
         'pose': 0.5,
         'ball': 0.65,
-        'player': 0.5
+        'player': 0.7
     }
+}
+
+# Visualization settings
+VISUALIZATION_SETTINGS = {
+    'show_reid': True,
+    'show_track_history': True,
+    'track_history_length': 30,
+    'reid_text_color': (255, 255, 255),  # White text
+    'reid_box_thickness': 2,
+    'reid_text_scale': 0.5,
 }
