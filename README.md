@@ -25,7 +25,7 @@ An AI-powered basketball referee system that automatically detects rule violatio
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/basketball_game_algorithm.git
+git clone https://github.com/jxk6575/AI_Basketball_Algorithm_System.git
 cd basketball_game_algorithm
 ```
 
@@ -169,4 +169,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 Xiankun Jiang - 2023213655@bupt.cn
 
-Project Link: [[https://github.com/yourusername/basketball_game_algorithm](https://github.com/yourusername/basketball_game_algorithm)](https://github.com/jxk6575/AI_Basketball_Algorithm_System)
+Project Link: https://github.com/jxk6575/AI_Basketball_Algorithm_System
