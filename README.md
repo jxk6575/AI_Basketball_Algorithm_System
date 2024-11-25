@@ -95,13 +95,20 @@ basketball_game_algorithm/
 │   └── input_handler.py    # Input processing
 ├── main.py                 # Main application
 └── test_model_loading.py   # Model testing
+└── README.md
+└── requirements.txt
 ```
 
 ## Usage
 
 ### Basic Usage
 ```bash
-python main.py --source input/video/game.mp4
+Select input style:
+0--cameras  # use the computer camara, or camaras connected to the computer
+1--images   # put the test images in input/images
+2--videos   # put the test videos in input/videos
+
+Enter choice (0-2): 
 ```
 
 ### Configuration
