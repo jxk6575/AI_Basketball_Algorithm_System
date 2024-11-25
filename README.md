@@ -56,7 +56,7 @@ mkdir -p models/weights
 basketball_game_algorithm/
 ├── config/
 │   ├── __init__.py
-│   └── settings.py          # Configuration settings
+│   └── settings.py         # Configuration settings
 ├── input/
 │   ├── images/             # Input images
 │   └── video/              # Input videos
@@ -67,16 +67,16 @@ basketball_game_algorithm/
 │   ├── double_dribble.py   # Double dribble detector
 │   ├── shot_clock.py       # Shot clock violation detector
 │   ├── ten_second.py       # Ten second violation detector
-│   ├── travel.py          # Traveling violation detector
-│   └── weights/           # Model weights directory
-├── output/                # Detection results
+│   ├── travel.py           # Traveling violation detector
+│   └── weights/            # Model weights directory
+├── output/                 # Detection results
 ├── utils/
 │   ├── __init__.py
-│   ├── tracking.py        # Player tracking utilities
-│   ├── visualization.py   # Visualization tools
-│   └── input_handler.py   # Input processing
-├── main.py               # Main application
-└── test_model_loading.py # Model testing
+│   ├── tracking.py         # Player tracking utilities
+│   ├── visualization.py    # Visualization tools
+│   └── input_handler.py    # Input processing
+├── main.py                 # Main application
+└── test_model_loading.py   # Model testing
 ```
 
 ## Usage
@@ -167,6 +167,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenCV](https://opencv.org/) for image processing
 
 ## Contact
-Your Name - your.email@example.com
+Xiankun Jiang - 2023213655@bupt.cn
 
-Project Link: [https://github.com/yourusername/basketball_game_algorithm](https://github.com/yourusername/basketball_game_algorithm)
+Project Link: [[https://github.com/yourusername/basketball_game_algorithm](https://github.com/yourusername/basketball_game_algorithm)](https://github.com/jxk6575/AI_Basketball_Algorithm_System)
