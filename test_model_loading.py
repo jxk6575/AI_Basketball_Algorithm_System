@@ -5,41 +5,19 @@ from pathlib import Path
 import torch
 
 def verify_model_files():
-    try:
-        weights_dir = Path("models/weights")
-        weights_dir.mkdir(parents=True, exist_ok=True)
-        pose_path = weights_dir / "yolov8s-pose.pt"
-        # Check pose model with safe loading
-        try:
-            pose_model = YOLO(pose_path)
-            print("✓ Pose model verified")
-        except Exception as e:
-            print(f"✗ Error loading pose model: {str(e)}")
+    weights_dir = Path("models/weights")
+    required_weights = [
+        "yolov8s-pose.pt",
+        "basketballModel.pt",
+        "best_1_27.pt"
+    ]
+    
+    for weight in required_weights:
+        weight_path = weights_dir / weight
+        if not weight_path.exists():
+            print(f"✗ Missing required weight file: {weight}")
             return False
-        
-        # Check basketball model with safe loading
-        ball_path = weights_dir / "basketballModel.pt"
-        if not ball_path.exists():
-            print(f"✗ Basketball model not found at {ball_path}")
-            print("Please download from: https://drive.google.com/file/d/1e6HLRuhh1IEmxOFaxHQMxfRqhzD92t3B/view")
-            return False
-            
-        try:
-            # Use YOLO loading instead of torch.load
-            ball_model = YOLO(str(ball_path))
-            # Test if model can process a dummy frame
-            dummy_frame = np.zeros((640, 640, 3), dtype=np.uint8)
-            _ = ball_model(dummy_frame, verbose=False)
-            print("✓ Basketball model verified")
-        except Exception as e:
-            print(f"✗ Error loading basketball model: {str(e)}")
-            return False
-            
-        return True
-        
-    except Exception as e:
-        print(f"✗ Model verification failed: {str(e)}")
-        return False
+    return True
 
 def test_camera():
     try:

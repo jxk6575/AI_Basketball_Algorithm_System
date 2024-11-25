@@ -9,11 +9,28 @@ from models.double_dribble import DoubleDribbleDetector
 from models.shot_clock import ShotClockDetector
 from models.travel import TravelDetector
 from models.backcourt import BackcourtDetector
+from models.blocking_foul import BlockingFoulDetector
 from models.ten_second import TenSecondDetector
 from utils.visualization import ViolationVisualizer
 from utils.tracking import PlayerTracker, BYTETracker
 from utils.input_handler import input_style
-from config.settings import PROJECT_ROOT, MODEL_PATHS, VIDEO_SETTINGS, OUTPUT_DIRS
+from config.settings import PROJECT_ROOT, MODEL_PATHS, VIDEO_SETTINGS, OUTPUT_DIRS, MODEL_SETTINGS
+
+
+class TrackerArgs:
+    """Arguments for BYTETracker initialization"""
+    def __init__(self):
+        track_args = MODEL_SETTINGS['track_args']
+        self.track_thresh = track_args['track_thresh']
+        self.track_buffer = track_args['track_buffer']
+        self.match_thresh = track_args['match_thresh']
+        self.mot20 = track_args['mot20']
+        self.track_high_thresh = track_args['track_high_thresh']
+        self.track_low_thresh = track_args['track_low_thresh']
+        self.new_track_thresh = track_args['new_track_thresh']
+        self.frame_rate = track_args['frame_rate']
+        self.aspect_ratio_thresh = track_args['aspect_ratio_thresh']
+        self.min_box_area = track_args['min_box_area']
 
 
 class BasketballRefereeSystem:
@@ -82,60 +99,39 @@ class BasketballRefereeSystem:
         print(f"\nSaving output to: {output_path}")
 
     def _initialize_models(self):
-        # Initialize models first
+        """Initialize all required models"""
         print("\nInitializing models...")
-        self.models = {}
-
         try:
-            self.models['pose'] = YOLO(MODEL_PATHS['pose'])
-            print("✓ Pose model loaded successfully")
-
-            self.models['ball'] = YOLO(MODEL_PATHS['ball'])
-            print("✓ Ball model loaded successfully")
-
-            self.models['player'] = YOLO(MODEL_PATHS['player'])
-            print("✓ Player detection model loaded successfully")
-
+            self.models = {
+                'pose': YOLO(MODEL_PATHS['pose']),
+                'ball': YOLO(MODEL_PATHS['ball']),
+                'player': YOLO(MODEL_PATHS['player'])
+            }
+            
+            # Set image size for all models
             for model in self.models.values():
-                model.overrides['imgsz'] = 1088
-
+                model.overrides['imgsz'] = MODEL_SETTINGS['imgsz']
+                
         except Exception as e:
-            print(f"Error loading models: {e}")
+            print(f"Error initializing models: {e}")
             raise
 
     def _initialize_components(self):
-        """Initialize all components and trackers"""
-        # Create tracker args
-        class TrackerArgs:
-            def __init__(self):
-                self.track_thresh = 0.15
-                self.track_buffer = 30
-                self.match_thresh = 0.7
-                self.mot20 = False
-                self.track_high_thresh = 0.3
-                self.track_low_thresh = 0.05
-                self.new_track_thresh = 0.2
-                self.frame_rate = 30
-                self.aspect_ratio_thresh = 1.6
-                self.min_box_area = 50
+        """Initialize all components"""
+        # Initialize detectors with shared models
+        self.double_dribble = DoubleDribbleDetector(self.models)
+        self.shot_clock = ShotClockDetector(self.models)
+        self.travel = TravelDetector(self.models)
+        self.backcourt = BackcourtDetector(self.models)
+        self.blocking_foul = BlockingFoulDetector(self.models)
+        self.ten_second = TenSecondDetector(self.models)
 
+        # Initialize trackers with proper configuration
         tracker_args = TrackerArgs()
-
-        # Pass models to detectors
-        self.double_dribble = DoubleDribbleDetector(models=self.models)
-        self.shot_clock = ShotClockDetector(models=self.models)
-        self.travel = TravelDetector(models=self.models)
-        self.backcourt = BackcourtDetector(models=self.models)
-        self.ten_second = TenSecondDetector(models=self.models)
-
-        # Initialize trackers with proper args
         self.player_tracker = PlayerTracker()
-        self.ball_tracker = BYTETracker(tracker_args)  # Create instance of args
+        self.ball_tracker = BYTETracker(tracker_args)
 
-        # Initialize frame buffer
-        self.frame_buffer = deque(maxlen=VIDEO_SETTINGS['frame_buffer_size'])
-
-        # Initialize visualization
+        # Initialize visualizer
         self.visualizer = ViolationVisualizer()
 
     def process_frame(self, frame):
@@ -205,6 +201,8 @@ class BasketballRefereeSystem:
             violations.append("Travel")
         if self.backcourt.check_violation(frame, ball_detections):
             violations.append("Backcourt")
+        if self.blocking_foul.check_violation(frame, ball_detections):
+            violations.append("Blocking Foul")
         if self.ten_second.check_violation(frame, player_detections):
             violations.append("Ten Second")
 

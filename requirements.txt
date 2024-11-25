@@ -1,0 +1,28 @@
+# Core Deep Learning
+torch==2.4.1
+torchvision==0.19.1
+
+# Computer Vision
+opencv-python==4.8.0.76
+Pillow==10.4.0
+
+# Object Detection
+ultralytics==8.0.196
+yolov5==7.0.13
+
+# Data Processing
+numpy==1.26.4
+pandas==2.2.2
+scipy==1.14.1
+scikit-learn==1.5.2
+
+# Visualization
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# Utilities
+tqdm==4.66.5
+PyYAML==6.0.2
+
+# Optional but recommended
+tensorboard==2.18.0  # for training visualization

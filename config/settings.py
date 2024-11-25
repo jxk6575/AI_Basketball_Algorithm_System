@@ -76,6 +76,18 @@ MODEL_SETTINGS = {
         'pose': 0.5,
         'ball': 0.65,
         'player': 0.7
+    },
+    'track_args': {
+        'track_thresh': 0.15,
+        'track_buffer': 30,
+        'match_thresh': 0.7,
+        'mot20': False,
+        'track_high_thresh': 0.3,
+        'track_low_thresh': 0.05,
+        'new_track_thresh': 0.2,
+        'frame_rate': 30,
+        'aspect_ratio_thresh': 1.6,
+        'min_box_area': 50
     }
 }
 
