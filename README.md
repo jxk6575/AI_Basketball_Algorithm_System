@@ -1,6 +1,8 @@
 # Basketball Game Algorithm
 
 An AI-powered basketball referee system that automatically detects rule violations using computer vision and deep learning techniques. The system analyzes basketball game footage to identify various violations including blocking fouls, double dribble, shot clock violations, and more.
+<img width="472" alt="7f50e102e6966faa7f5366020598a55" src="https://github.com/user-attachments/assets/9605b022-2cdd-42bc-b873-47801b670801">
+
 
 ## Features
 
