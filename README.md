@@ -124,9 +124,6 @@ MODEL_SETTINGS = {
 }
 ```
 
-### Cloud Deployment
-The project includes configuration for deployment to cloud servers (see `.idea/deployment.xml` for details).
-
 ## Requirements
 
 ### Core Dependencies
@@ -166,13 +163,6 @@ python test_model_loading.py
    - Adjust confidence thresholds
    - Enable GPU acceleration if available
 
-## Contributing
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
 ## Citation
 ```bibtex
 @software{jiang2024basketball,
@@ -184,8 +174,6 @@ python test_model_loading.py
 }
 ```
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 - [YOLOv5](https://github.com/ultralytics/yolov5) for object detection
