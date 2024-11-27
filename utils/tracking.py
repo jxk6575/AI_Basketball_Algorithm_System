@@ -2,9 +2,7 @@ from ultralytics.trackers.byte_tracker import BYTETracker, STrack
 from collections import deque
 import numpy as np
 import torch
-import cv2
-import warnings
-warnings.filterwarnings('ignore', category=FutureWarning)
+from models.reid import TorchReID
 
 
 class PlayerTracker:
@@ -31,14 +29,8 @@ class PlayerTracker:
 
         self.tracker = BYTETracker(Args())
 
-        # Add appearance feature buffer
-        self.feature_buffer = {}  # {track_id: deque of features}
-        self.feature_buffer_size = 10
-
-        # Add safe loading configuration
-        torch.serialization.add_safe_globals(
-            {'torch': torch, 'np': np}
-        )
+        self.reid_model = TorchReID()
+        self.feature_cache = {}
 
     def calculate_iou(self, box1, box2):
         """Calculate IoU between two boxes"""
@@ -90,16 +82,6 @@ class PlayerTracker:
 
         return matched_ids
 
-    def update_features(self, track_id, new_feature):
-        """Update appearance features for ReID"""
-        if track_id not in self.feature_buffer:
-            self.feature_buffer[track_id] = deque(maxlen=self.feature_buffer_size)
-        self.feature_buffer[track_id].append(new_feature)
-        
-    def compute_similarity(self, feature1, feature2):
-        """Compute cosine similarity between features"""
-        return np.dot(feature1, feature2) / (np.linalg.norm(feature1) * np.linalg.norm(feature2))
-        
     def update(self, detections, frame):
         if len(detections) == 0:
             return []
@@ -181,21 +163,6 @@ class PlayerTracker:
             self.last_boxes = {k: v for k, v in self.last_boxes.items()
                                if k in self.track_ages}
 
-            # Extract features for each detection
-            for det in detections:
-                if det is not None:
-                    bbox = det[:4]
-                    conf = det[4]
-                    
-                    # Extract image patch
-                    x1, y1, x2, y2 = map(int, bbox)
-                    patch = frame[y1:y2, x1:x2]
-                    
-                    # Update feature buffer
-                    if patch.size > 0:  # Ensure valid patch
-                        feature = self.extract_features(patch)
-                        self.update_features(det[-1], feature)
-                        
             return tracked_objects
 
         except Exception as e:
@@ -205,18 +172,94 @@ class PlayerTracker:
             traceback.print_exc()
             return []
 
-    def extract_features(self, patch):
-        """Extract appearance features from image patch"""
-        # Ensure patch is valid
-        if patch.size == 0:
-            return np.zeros(512)  # Return zero feature vector
+    def extract_enhanced_features(self, patch):
+        """Extract features with caching"""
+        # Generate simple hash of the patch for caching
+        patch_hash = hash(patch.tobytes())
+        
+        # Return cached features if available
+        if patch_hash in self.feature_cache:
+            return self.feature_cache[patch_hash]
             
-        # Resize patch to standard size
-        patch = cv2.resize(patch, (64, 128))
+        # Extract new features
+        features = self.reid_model.extract_features(patch)
         
-        # Convert to float32 and normalize
-        patch = patch.astype(np.float32) / 255.0
+        # Cache the features
+        self.feature_cache[patch_hash] = features
         
-        # Simple feature extraction (can be enhanced with a proper ReID model)
-        feature = cv2.mean(patch)[:3]  # Use mean color as feature
-        return np.array(feature)
+        # Limit cache size
+        if len(self.feature_cache) > 1000:
+            # Remove oldest entries
+            keys = list(self.feature_cache.keys())
+            for old_key in keys[:100]:
+                del self.feature_cache[old_key]
+                
+        return features
+
+    # Example of improved tracking through occlusion
+    def handle_occlusion(self, tracks, features):
+        try:
+            for track in tracks:
+                if track.is_occluded:
+                    similarities = [
+                        self.reid_model.compute_similarity(track.features, feat)
+                        for feat in features if feat is not None
+                    ]
+                    if similarities:
+                        best_match = np.argmax(similarities)
+                        if similarities[best_match] > 0.8:
+                            track.recover(best_match)
+        except Exception:
+            pass  # Silent failure for occlusion handling
+
+    def track_ball(self, detections):
+        try:
+            # Case 1: No detections
+            if not isinstance(detections, (list, np.ndarray)) or len(detections) == 0:
+                return None
+                
+            # Case 2: Single detection
+            if len(detections) == 1:
+                return detections[0]
+                
+            # Case 3: Multiple detections - use confidence scores
+            # Assuming detections format: [x1, y1, x2, y2, conf, class]
+            ball_detections = []
+            for det in detections:
+                if len(det) >= 6 and det[5] == 0:  # Assuming ball is class 0
+                    ball_detections.append(det)
+            
+            if not ball_detections:
+                return None
+                
+            # Return the ball detection with highest confidence
+            confidences = [det[4] for det in ball_detections]
+            return ball_detections[np.argmax(confidences)]
+            
+        except Exception as e:
+            # Instead of printing error, return None silently
+            return None
+
+    def process_detections(self, frame, detections):
+        try:
+            # Separate ball and player detections
+            ball_dets = []
+            player_dets = []
+            
+            for det in detections:
+                if len(det) >= 6:  # Make sure detection has class info
+                    if det[5] == 0:  # Ball class
+                        ball_dets.append(det)
+                    else:  # Player class
+                        player_dets.append(det)
+            
+            # Track ball using only ball detections
+            ball_track = self.track_ball(ball_dets)
+            
+            # Process players
+            player_tracks = self.track_players(frame, player_dets)
+            
+            return ball_track, player_tracks
+            
+        except Exception:
+            return None, []

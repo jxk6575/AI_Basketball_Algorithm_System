@@ -1,3 +1,8 @@
+import warnings
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TF warnings
+warnings.filterwarnings('ignore')  # Suppress all warnings
+
 import cv2
 import numpy as np
 from pathlib import Path
