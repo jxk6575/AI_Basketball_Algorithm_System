@@ -2,6 +2,9 @@ from ultralytics.trackers.byte_tracker import BYTETracker, STrack
 from collections import deque
 import numpy as np
 import torch
+import cv2
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 class PlayerTracker:
@@ -27,6 +30,15 @@ class PlayerTracker:
             min_box_area = 50
 
         self.tracker = BYTETracker(Args())
+
+        # Add appearance feature buffer
+        self.feature_buffer = {}  # {track_id: deque of features}
+        self.feature_buffer_size = 10
+
+        # Add safe loading configuration
+        torch.serialization.add_safe_globals(
+            {'torch': torch, 'np': np}
+        )
 
     def calculate_iou(self, box1, box2):
         """Calculate IoU between two boxes"""
@@ -78,6 +90,16 @@ class PlayerTracker:
 
         return matched_ids
 
+    def update_features(self, track_id, new_feature):
+        """Update appearance features for ReID"""
+        if track_id not in self.feature_buffer:
+            self.feature_buffer[track_id] = deque(maxlen=self.feature_buffer_size)
+        self.feature_buffer[track_id].append(new_feature)
+        
+    def compute_similarity(self, feature1, feature2):
+        """Compute cosine similarity between features"""
+        return np.dot(feature1, feature2) / (np.linalg.norm(feature1) * np.linalg.norm(feature2))
+        
     def update(self, detections, frame):
         if len(detections) == 0:
             return []
@@ -159,6 +181,21 @@ class PlayerTracker:
             self.last_boxes = {k: v for k, v in self.last_boxes.items()
                                if k in self.track_ages}
 
+            # Extract features for each detection
+            for det in detections:
+                if det is not None:
+                    bbox = det[:4]
+                    conf = det[4]
+                    
+                    # Extract image patch
+                    x1, y1, x2, y2 = map(int, bbox)
+                    patch = frame[y1:y2, x1:x2]
+                    
+                    # Update feature buffer
+                    if patch.size > 0:  # Ensure valid patch
+                        feature = self.extract_features(patch)
+                        self.update_features(det[-1], feature)
+                        
             return tracked_objects
 
         except Exception as e:
@@ -167,3 +204,19 @@ class PlayerTracker:
             import traceback
             traceback.print_exc()
             return []
+
+    def extract_features(self, patch):
+        """Extract appearance features from image patch"""
+        # Ensure patch is valid
+        if patch.size == 0:
+            return np.zeros(512)  # Return zero feature vector
+            
+        # Resize patch to standard size
+        patch = cv2.resize(patch, (64, 128))
+        
+        # Convert to float32 and normalize
+        patch = patch.astype(np.float32) / 255.0
+        
+        # Simple feature extraction (can be enhanced with a proper ReID model)
+        feature = cv2.mean(patch)[:3]  # Use mean color as feature
+        return np.array(feature)
