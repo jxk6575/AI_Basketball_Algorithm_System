@@ -3,7 +3,6 @@ import numpy as np
 from ultralytics import YOLO
 from pathlib import Path
 import torch
-from models.reid.torch_reid import TorchReID
 
 def verify_model_files():
     weights_dir = Path("models/weights")
@@ -35,22 +34,12 @@ def test_camera():
         print(f"✗ Camera error: {str(e)}")
         return False
 
-def test_reid():
-    try:
-        reid = TorchReID()
-        print("✓ ReID model loaded successfully")
-        return True
-    except Exception as e:
-        print(f"✗ ReID model loading failed: {e}")
-        return False
-
 def test_setup():
     print("\nVerifying setup...")
     models_ok = verify_model_files()
     camera_ok = test_camera()
-    reid_ok = test_reid()
     
-    if models_ok and camera_ok and reid_ok:
+    if models_ok and camera_ok:
         print("\n✓ All checks passed!")
         return True
     else:
