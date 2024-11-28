@@ -100,3 +100,11 @@ VISUALIZATION_SETTINGS = {
     'reid_box_thickness': 2,
     'reid_text_scale': 0.5,
 }
+
+# ReID settings
+REID_SETTINGS = {
+    'feature_dim': 128,
+    'max_features': 10,
+    'similarity_threshold': 0.5,
+    'img_size': (128, 64)
+}
