@@ -4,7 +4,29 @@ import numpy as np
 import torch
 import cv2
 import warnings
+from torchvision.ops import nms
 warnings.filterwarnings('ignore', category=FutureWarning)
+from .reid_module import ReIDModule
+from pathlib import Path
+from filterpy.kalman import KalmanFilter
+
+
+class DetectionResults:
+    """Class to format detections for BYTETracker"""
+    def __init__(self, dets):
+        self.boxes = torch.from_numpy(dets[:, :4]) if len(dets) > 0 else torch.empty((0, 4))
+        self.conf = torch.from_numpy(dets[:, 4]) if len(dets) > 0 else torch.empty(0)
+        self.cls = torch.zeros(len(dets))
+        self.xyxy = self.boxes
+
+class Track:
+    """Class to store track information"""
+    def __init__(self, tlbr, track_id, score=1.0):
+        self.tlbr = tlbr
+        self.track_id = track_id
+        self.score = score
+        self.bbox = np.array(tlbr, dtype=np.float32)
+        self.reid_features = None
 
 
 class PlayerTracker:
@@ -38,6 +60,12 @@ class PlayerTracker:
         # Add safe loading configuration
         torch.serialization.add_safe_globals(
             {'torch': torch, 'np': np}
+        )
+
+        # Initialize ReID module
+        self.reid_module = ReIDModule(
+            model_path=str(Path(__file__).parent.parent / "models" / "weights" / "osnet_x0_25.pth"),
+            threshold=0.5
         )
 
     def calculate_iou(self, box1, box2):
@@ -101,106 +129,37 @@ class PlayerTracker:
         return np.dot(feature1, feature2) / (np.linalg.norm(feature1) * np.linalg.norm(feature2))
         
     def update(self, detections, frame):
-        if len(detections) == 0:
-            return []
-
+        """Update tracks with new detections"""
         try:
-            # Apply NMS to remove duplicate detections
-            from torchvision.ops import nms
-            boxes = torch.from_numpy(detections[:, :4])
-            scores = torch.from_numpy(detections[:, 4])
-            keep_indices = nms(boxes, scores, iou_threshold=0.45)
-            detections = detections[keep_indices.cpu().numpy()]
-
-            # Create Results object for tracker
-            class Results:
-                def __init__(self, dets):
-                    self.boxes = torch.from_numpy(dets[:, :4])
-                    self.conf = torch.from_numpy(dets[:, 4])
-                    self.cls = torch.zeros(len(dets))
-                    self.xyxy = self.boxes
-
-            results = Results(detections)
-
-            # Get tracker output
-            online_targets = self.tracker.update(
-                results,
-                [frame.shape[0], frame.shape[1]]
-            )
-
-            # Match current boxes with previous frame's boxes
-            current_boxes = [target[:4] for target in online_targets]
-            matched_ids = self.match_boxes(current_boxes)
-
-            # Update track ages
-            current_track_ids = set(matched_ids.values())
-            for track_id in list(self.track_ages.keys()):
-                if track_id in current_track_ids:
-                    self.track_ages[track_id] = 0
-                else:
-                    self.track_ages[track_id] += 1
-                    if self.track_ages[track_id] > self.max_age:
-                        del self.track_ages[track_id]
-                        if track_id in self.track_history:
-                            del self.track_history[track_id]
-
-            # Convert to tracked objects
-            tracked_objects = []
-            for i, target in enumerate(online_targets):
-                if isinstance(target, np.ndarray) and len(target) >= 4:
-                    track_id = matched_ids[i]
-
-                    class TrackedObject:
-                        def __init__(self, box, id_, score=None):
-                            self.track_id = id_
-                            self.bbox = box[:4]
-                            self.score = float(score) if score is not None else 1.0
-                            self.cls = 0
-                            self.tlbr = box[:4]
-
-                    score = target[4] if len(target) > 4 else None
-                    tracked_obj = TrackedObject(target, track_id, score)
-
-                    # Update track history
-                    center = ((int(target[0]) + int(target[2])) // 2,
-                              (int(target[1]) + int(target[3])) // 2)
-
-                    if track_id not in self.track_history:
-                        self.track_history[track_id] = deque(maxlen=30)
-
-                    self.track_history[track_id].append(center)
-                    tracked_obj.track_history = list(self.track_history[track_id])
-
-                    tracked_objects.append(tracked_obj)
-
-                    # Update last known position
-                    self.last_boxes[track_id] = target[:4]
-                    self.track_ages[track_id] = 0
-
-            # Clean up old tracks
-            self.last_boxes = {k: v for k, v in self.last_boxes.items()
-                               if k in self.track_ages}
-
-            # Extract features for each detection
-            for det in detections:
-                if det is not None:
-                    bbox = det[:4]
-                    conf = det[4]
+            detections_array = np.array(detections)
+            
+            if len(detections_array.shape) == 2 and detections_array.shape[1] >= 5:
+                results = DetectionResults(detections_array)
+                
+                tracks = self.tracker.update(
+                    results,
+                    [frame.shape[0], frame.shape[1]]
+                )
+                
+                tracked_objects = []
+                for track in tracks:
+                    # BYTETracker returns numpy array: [x1, y1, x2, y2, score, class_id]
+                    x1, y1, x2, y2 = track[:4]  # First 4 elements are coordinates
+                    track_id = int(track[4])  # 5th element is track_id
+                    score = float(track[5]) if len(track) > 5 else 1.0  # 6th element is score if available
                     
-                    # Extract image patch
-                    x1, y1, x2, y2 = map(int, bbox)
-                    patch = frame[y1:y2, x1:x2]
-                    
-                    # Update feature buffer
-                    if patch.size > 0:  # Ensure valid patch
-                        feature = self.extract_features(patch)
-                        self.update_features(det[-1], feature)
-                        
-            return tracked_objects
+                    track_obj = Track([x1, y1, x2, y2], track_id, score)
+                    tracked_objects.append(track_obj)
+                
+                return tracked_objects
+            else:
+                print(f"Invalid detection format. Expected shape (N, 5+), got {detections_array.shape}")
+                return []
 
         except Exception as e:
             print(f"Error in tracker update: {str(e)}")
             print(f"Error details: {type(e).__name__}")
+            print(f"Detection type when error occurred: {type(detections)}")
             import traceback
             traceback.print_exc()
             return []

@@ -7,49 +7,49 @@ class ViolationVisualizer:
         self.info_panel_height = 100  # Height of bottom info panel in pixels
         
     def get_color(self, track_id):
+        """Generate unique color for each track ID using HSV color space"""
         if track_id not in self.colors:
-            # Generate unique color for this ID
-            self.colors[track_id] = (
-                int((track_id * 47) % 255),
-                int((track_id * 97) % 255),
-                int((track_id * 157) % 255)
-            )
+            # Use golden ratio to generate well-distributed hues
+            hue = (track_id * 0.618033988749895) % 1.0
+            # Convert HSV to RGB (using full saturation and value)
+            rgb = cv2.cvtColor(
+                np.uint8([[[hue * 255, 255, 255]]]),
+                cv2.COLOR_HSV2BGR
+            )[0][0]
+            self.colors[track_id] = tuple(map(int, rgb))
         return self.colors[track_id]
 
     def draw_reid_info(self, frame, tracked_players):
-        """Draw ReID information and tracked players"""
-        # Create a copy of the frame
-        annotated_frame = frame.copy()
-        
-        # Draw tracked players
+        """Draw ReID information on frame with unique colors"""
         for player in tracked_players:
-            # Get track ID and box
-            track_id = player.track_id
             box = player.bbox.astype(int)
-            color = self.get_color(track_id)
             
-            # Draw bounding box
-            cv2.rectangle(annotated_frame, 
+            # Get unique color for this ID
+            color = self.get_color(player.track_id)
+            
+            # Draw bounding box with unique color
+            cv2.rectangle(frame, 
                          (box[0], box[1]), 
                          (box[2], box[3]), 
                          color, 2)
             
-            # Draw ID text with background
-            text = f"ID: {track_id}"
-            text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
+            # Draw ID with background for better visibility
+            text = f'ID: {player.track_id}'
+            (text_width, text_height), _ = cv2.getTextSize(
+                text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
             
             # Draw text background
-            cv2.rectangle(annotated_frame,
-                         (box[0], box[1] - text_size[1] - 8),
-                         (box[0] + text_size[0], box[1]),
-                         color, -1)
+            cv2.rectangle(frame,
+                         (box[0], box[1] - text_height - 8),
+                         (box[0] + text_width + 4, box[1]),
+                         color, -1)  # -1 fills the rectangle
             
-            # Draw text
-            cv2.putText(annotated_frame, text,
-                       (box[0], box[1] - 5),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            # Draw text in white for contrast
+            cv2.putText(frame, text,
+                       (box[0] + 2, box[1] - 5),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         
-        return annotated_frame
+        return frame
 
     def add_info_panel(self, frame, tracked_players, violations=None):
         """Add information panel at the bottom of the frame"""
@@ -76,10 +76,10 @@ class ViolationVisualizer:
 
     def visualize_frame(self, frame, tracked_players, violations=None):
         """Complete visualization pipeline"""
-        # Draw ReID information
-        frame_with_reid = self.draw_reid_info(frame, tracked_players)
+        # Draw ReID information first
+        frame_with_reid = self.draw_reid_info(frame.copy(), tracked_players)
         
-        # Add information panel
+        # Add information panel once
         final_frame = self.add_info_panel(frame_with_reid, tracked_players, violations)
         
         return final_frame

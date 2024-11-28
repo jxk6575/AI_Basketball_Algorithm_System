@@ -206,7 +206,14 @@ class BasketballRefereeSystem:
         if self.ten_second.check_violation(frame, player_detections):
             violations.append("Ten Second")
 
-        return violations, annotated_frame, tracked_players
+        # Create final visualization (only once!)
+        final_frame = self.visualizer.visualize_frame(
+            annotated_frame,
+            tracked_players,
+            violations
+        )
+
+        return violations, final_frame, tracked_players
 
     def process_image(self):
         """Process single image"""
@@ -246,34 +253,19 @@ class BasketballRefereeSystem:
                 print(f"\rProcessing frame: {frame_count}", end="")
 
                 # Process frame
-                violations, annotated_frame, tracked_players = self.process_frame(frame)
-                self.current_violations = violations
-
-                # Create final visualization
-                final_frame = self.visualizer.visualize_frame(
-                    annotated_frame,
-                    tracked_players,
-                    violations
-                )
-
-                # Display frame
+                violations, final_frame, tracked_players = self.process_frame(frame)
+                
+                # Display frame (don't add info panel again!)
                 cv2.imshow('Basketball Referee System', final_frame)
 
-                # Save frame if enabled
                 if self.save_output and self.out is not None:
                     self.out.write(final_frame)
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
-                    print("\nStopped by user")
                     break
 
         except Exception as e:
             print(f"\nError during processing: {e}")
-            import traceback
-            traceback.print_exc()
-
-        finally:
-            self.cleanup()
 
     def cleanup(self):
         """Cleanup resources"""
