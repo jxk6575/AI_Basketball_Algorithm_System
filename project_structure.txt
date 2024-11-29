@@ -1,35 +1,58 @@
 Project Structure for: basketball_game_algorithm
-=============================================
-Generated at: 2024-11-28 23:33:46
+================================================
+Generated at: 2024-11-29 13:57:14
 
-├── basketball_game_algorithm
-│   ├── config
-│       ├── settings.py
-│   ├── input
-│   │   ├── images
-│   │   │   ├── 0.png
-│   │       ├── input2.png
-│       ├── video
-│   ├── models
-│   │   ├── __init__.py
-│   │   ├── backcourt.py
-│   │   ├── blocking_foul.py
-│   │   ├── detector_base.py
-│   │   ├── double_dribble.py
-│   │   ├── shot_clock.py
-│   │   ├── ten_second.py
-│       ├── travel.py
-│   ├── utils
-│   │   ├── __init__.py
-│   │   ├── generate_tree.py
-│   │   ├── input_handler.py
-│   │   ├── reid_module.py
-│   │   ├── tracking.py
-│       ├── visualization.py
-│   ├── Details.md
-│   ├── main.py
-│   ├── project_structure.txt
-│   ├── README.md
-│   ├── requirements.txt
-    ├── test_model_loading.py
 
+├── Details.md
+├── README.md
+├── main.py
+├── test_model_loading.py
+├── project_structure.txt
+└── requirements.txt
+├── config/
+│   └── settings.py
+├── input/
+│   ├── images/
+│   │   ├── 0.png
+│   │   └── input2.png
+│   ├── video/
+│   │   ├── 012.mp4 (4.0MB)
+│   │   ├── 1.mp4 (1.5MB)
+│   │   ├── 1082233841.mp4 (3.8MB)
+│   │   ├── 2.mp4 (1.3MB)
+│   │   ├── 2_2.mp4 (1.9MB)
+│   │   ├── CBA Guangdong Southern Tigers VS German Braunschweig ｜ Full Game Highlights｜Aug 31, 2024.mp4 (349.7MB)
+│   │   ├── double_1.mp4 (3.8MB)
+│   │   ├── game_1.mp4 (9.6MB)
+│   │   ├── input1.mp4 (14.8MB)
+│   │   ├── input2.mp4 (14.8MB)
+│   │   ├── jump.mp4 (563.5KB)
+│   │   ├── muti_wrong.mp4 (18.1MB)
+│   │   ├── travel_1.mp4 (3.8MB)
+│   │   └── videoplayback.mp4 (2.8MB)
+├── models/
+│   ├── __init__.py
+│   ├── backcourt.py
+│   ├── blocking_foul.py
+│   ├── detector_base.py
+│   ├── double_dribble.py
+│   ├── shot_clock.py
+│   ├── ten_second.py
+│   └── travel.py
+│   ├── weights/
+│   │   ├── basketballModel.pt (85.4MB)
+│   │   ├── best_1_27.pt (5.9MB)
+│   │   ├── tr_roi_finetune_130_large.pt (333.6MB)
+│   │   ├── yolo11m.pt (38.8MB)
+│   │   ├── yolo11n.pt (5.4MB)
+│   │   ├── yolo8x-player.pt (130.4MB)
+│   │   ├── yolov10n.pt (10.9MB)
+│   │   ├── yolov8s-pose.pt (22.4MB)
+│   │   └── osnet_x0_25.pth (2.8MB)
+├── utils/
+│   ├── __init__.py
+│   ├── generate_tree.py
+│   ├── input_handler.py
+│   ├── reid_module.py
+│   ├── tracking.py
+│   └── visualization.py

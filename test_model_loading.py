@@ -3,6 +3,28 @@ import numpy as np
 from ultralytics import YOLO
 from pathlib import Path
 import torch
+import gdown
+from config.settings import MODEL_PATHS, MODEL_URLS
+
+def download_model(model_name):
+    """Download model from Google Drive if not present"""
+    if model_name not in MODEL_URLS:
+        return False
+        
+    weight_path = Path(MODEL_PATHS[model_name])
+    if weight_path.exists():
+        return True
+        
+    print(f"Downloading {model_name} model...")
+    weight_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # Convert sharing URL to direct download URL
+        gdown.download(MODEL_URLS[model_name], str(weight_path), fuzzy=True)
+        return True
+    except Exception as e:
+        print(f"Error downloading model: {e}")
+        return False
 
 def verify_model_files():
     weights_dir = Path("models/weights")
@@ -12,12 +34,19 @@ def verify_model_files():
         "best_1_27.pt"
     ]
     
+    all_present = True
     for weight in required_weights:
         weight_path = weights_dir / weight
         if not weight_path.exists():
             print(f"✗ Missing required weight file: {weight}")
-            return False
-    return True
+            # Try to download if URL is available
+            model_name = weight.replace('.pt', '')
+            if download_model(model_name):
+                print(f"✓ Successfully downloaded: {weight}")
+            else:
+                all_present = False
+                
+    return all_present
 
 def test_camera():
     try:

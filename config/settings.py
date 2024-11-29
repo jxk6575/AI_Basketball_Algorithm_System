@@ -4,11 +4,15 @@ from pathlib import Path
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent
 
-# Model paths
+# Model paths and download URLs
 MODEL_PATHS = {
     'pose': str(PROJECT_ROOT / "models" / "weights" / "yolov8s-pose.pt"),
     'ball': str(PROJECT_ROOT / "models" / "weights" / "basketballModel.pt"),
     'player': str(PROJECT_ROOT / "models" / "weights" / "best_1_27.pt")
+}
+
+MODEL_URLS = {
+    'ball': "https://drive.google.com/file/d/1e6HLRuhh1IEmxOFaxHQMxfRqhzD92t3B/view?usp=sharing"
 }
 
 # Video settings

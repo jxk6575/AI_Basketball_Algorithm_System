@@ -2,6 +2,14 @@ import os
 from pathlib import Path
 from datetime import datetime
 
+def format_size(size):
+    """Convert size in bytes to human readable format"""
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size < 1024:
+            return f"{size:.1f}{unit}"
+        size /= 1024
+    return f"{size:.1f}TB"
+
 def generate_tree(startpath, output_file=None, exclude_dirs=None, exclude_files=None):
     """
     Generate a tree structure of the project directory and optionally save to file
@@ -16,6 +24,9 @@ def generate_tree(startpath, output_file=None, exclude_dirs=None, exclude_files=
         exclude_dirs = ['.git', '__pycache__', 'venv', 'env', '.idea']
     if exclude_files is None:
         exclude_files = ['.pyc', '.pyo', '.pyd', '.so', '.dll']
+    
+    # Convert startpath to string if it's a Path object
+    startpath = str(startpath)
     
     # Store tree lines
     tree_lines = []
@@ -32,65 +43,54 @@ def generate_tree(startpath, output_file=None, exclude_dirs=None, exclude_files=
         return False
     
     def add_to_tree(line):
-        """Add line to tree structure"""
+        """Add a line to the tree structure"""
         tree_lines.append(line)
-        if not output_file:
+        if output_file is None:
             print(line)
     
-    def print_tree(startpath, prefix=''):
-        """Recursively print directory tree"""
-        if should_exclude(startpath):
-            return
-            
-        # Print current item
-        path = Path(startpath)
-        add_to_tree(f"{prefix}├── {path.name}")
+    # Generate header
+    header = f"Project Structure for: {Path(startpath).name}\n"
+    header += "=" * (len(header) - 1) + "\n"
+    header += f"Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+    add_to_tree(header)
+    
+    for root, dirs, files in os.walk(startpath):
+        # Skip excluded directories
+        dirs[:] = [d for d in dirs if not should_exclude(Path(root) / d)]
         
-        # Handle directory contents
-        if path.is_dir():
-            # Get and sort directory contents
-            contents = sorted(list(path.iterdir()), 
-                           key=lambda x: (x.is_file(), x.name.lower()))
-            
-            # Process each item
-            for i, item in enumerate(contents):
-                if should_exclude(item):
-                    continue
-                    
-                # Determine prefix for next level
-                is_last = i == len(contents) - 1
-                new_prefix = prefix + ('    ' if is_last else '│   ')
+        level = root.replace(startpath, '').count(os.sep)
+        indent = '│   ' * level
+        
+        # Add directory to tree
+        if level > 0:
+            add_to_tree(f"{indent[:-4]}├── {os.path.basename(root)}/")
+        
+        # Add files to tree
+        subindent = '│   ' * (level + 1)
+        
+        # Sort files by extension and name
+        files = sorted(files, key=lambda x: (Path(x).suffix, x))
+        for i, f in enumerate(files):
+            if not should_exclude(Path(root) / f):
+                file_path = Path(root) / f
+                size_str = ""
                 
-                # Recursively print item
-                print_tree(item, new_prefix)
+                # Add file size for large files
+                if file_path.suffix in ['.pt', '.pth', '.mp4', '.avi', '.mov']:
+                    size = file_path.stat().st_size
+                    size_str = f" ({format_size(size)})"
+                
+                # Use └── for last item
+                prefix = '└──' if i == len(files) - 1 else '├──'
+                add_to_tree(f"{subindent[:-4]}{prefix} {f}{size_str}")
     
-    # Start generating tree from root
-    root = Path(startpath)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    # Add header
-    add_to_tree(f"Project Structure for: {root.name}")
-    add_to_tree("=" * (20 + len(root.name)))
-    add_to_tree(f"Generated at: {timestamp}\n")
-    
-    # Generate tree
-    print_tree(startpath)
-    add_to_tree("\n")  # Add final newline
-    
-    # Save to file if output_file is specified
+    # Save to file if specified
     if output_file:
-        output_path = Path(output_file)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        try:
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(tree_lines))
-            print(f"\nTree structure saved to: {output_path}")
-        except Exception as e:
-            print(f"\nError saving tree structure: {e}")
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(tree_lines))
 
 def main():
-    # Get project root (assuming this script is in utils/)
+    # Get project root directory
     project_root = Path(__file__).parent.parent
     
     # Define exclusions
@@ -100,7 +100,6 @@ def main():
         'venv',
         'env',
         '.idea',
-        'weights',  # Exclude model weights directory
         'output'    # Exclude output directory
     ]
     
@@ -110,10 +109,7 @@ def main():
         '.pyd',
         '.so',
         '.dll',
-        '.log',
-        '.mp4',
-        '.avi',
-        '.mov'
+        '.log'
     ]
     
     # Define output file path
